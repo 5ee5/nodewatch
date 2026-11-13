@@ -9,16 +9,14 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 pub const MIN_TOKEN_LEN: usize = 32;
+/// Upper bound (30 days) so TTL arithmetic can never overflow.
+const MAX_SESSION_TTL_SECS: u64 = 30 * 24 * 3600;
 
 /// A secret string whose `Debug` output is redacted so it can't leak into logs.
 #[derive(Clone)]
-// TODO(step 2/3): remove once the sampler and auth consume this.
-#[allow(dead_code)]
 pub struct Secret(String);
 
 impl Secret {
-    // TODO(step 2/3): remove once the sampler and auth consume this.
-    #[allow(dead_code)]
     pub fn expose(&self) -> &str {
         &self.0
     }
@@ -31,8 +29,6 @@ impl fmt::Debug for Secret {
 }
 
 #[derive(Debug, Clone)]
-// TODO(step 2/3): remove once the sampler and auth consume this.
-#[allow(dead_code)]
 pub struct Config {
     pub bind: SocketAddr,
     pub token: Secret,
@@ -121,7 +117,7 @@ impl Config {
             bind,
             token: Secret(token),
             cookie_secure,
-            session_ttl: Duration::from_secs(ttl.max(60)),
+            session_ttl: Duration::from_secs(ttl.clamp(60, MAX_SESSION_TTL_SECS)),
             refresh_interval: Duration::from_secs(refresh.clamp(1, 60)),
         })
     }
@@ -221,6 +217,16 @@ mod tests {
     fn refresh_is_clamped() {
         let c = load(&[("NODEWATCH_TOKEN", TOKEN), ("NODEWATCH_REFRESH_SECS", "0")]).unwrap();
         assert_eq!(c.refresh_interval, Duration::from_secs(1));
+    }
+
+    #[test]
+    fn session_ttl_is_clamped() {
+        let c = load(&[
+            ("NODEWATCH_TOKEN", TOKEN),
+            ("NODEWATCH_SESSION_TTL_SECS", "18446744073709551615"),
+        ])
+        .unwrap();
+        assert_eq!(c.session_ttl, Duration::from_secs(MAX_SESSION_TTL_SECS));
     }
 
     #[test]

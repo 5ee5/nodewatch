@@ -1,7 +1,9 @@
 mod api;
+mod auth;
 mod collector;
 mod config;
 
+use std::net::SocketAddr;
 use std::process::ExitCode;
 
 use tokio::net::TcpListener;
@@ -37,7 +39,10 @@ async fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
-    let state = api::AppState { snapshot };
+    let state = api::AppState {
+        snapshot,
+        auth: auth::Auth::new(&config),
+    };
 
     let listener = match TcpListener::bind(config.bind).await {
         Ok(l) => l,
@@ -48,9 +53,12 @@ async fn main() -> ExitCode {
     };
     info!("listening on http://{}", config.bind);
 
-    let served = axum::serve(listener, api::build_router(state))
-        .with_graceful_shutdown(shutdown_signal())
-        .await;
+    let served = axum::serve(
+        listener,
+        api::build_router(state).into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await;
     if let Err(e) = served {
         error!("server error: {e}");
         return ExitCode::FAILURE;
