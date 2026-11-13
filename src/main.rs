@@ -1,4 +1,5 @@
 mod api;
+mod collector;
 mod config;
 
 use std::process::ExitCode;
@@ -29,6 +30,15 @@ async fn main() -> ExitCode {
         );
     }
 
+    let snapshot = match collector::spawn(config.refresh_interval).await {
+        Ok(s) => s,
+        Err(e) => {
+            error!("cannot start metrics collector: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let state = api::AppState { snapshot };
+
     let listener = match TcpListener::bind(config.bind).await {
         Ok(l) => l,
         Err(e) => {
@@ -38,7 +48,7 @@ async fn main() -> ExitCode {
     };
     info!("listening on http://{}", config.bind);
 
-    let served = axum::serve(listener, api::build_router())
+    let served = axum::serve(listener, api::build_router(state))
         .with_graceful_shutdown(shutdown_signal())
         .await;
     if let Err(e) = served {
