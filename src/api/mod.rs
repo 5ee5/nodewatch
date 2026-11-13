@@ -42,6 +42,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/login", get(routes::login_page))
         .route("/login.js", get(routes::login_js))
         .route("/style.css", get(routes::style_css))
+        .route("/favicon.svg", get(routes::favicon))
         .route("/api/health", get(routes::health))
         .route("/api/login", post(auth::login))
         .route("/api/logout", post(auth::logout));
@@ -367,6 +368,7 @@ mod tests {
             ("/login", "text/html"),
             ("/login.js", "text/javascript"),
             ("/style.css", "text/css"),
+            ("/favicon.svg", "image/svg+xml"),
         ] {
             let res = send(&app(), get_req(path).body(Body::empty()).unwrap()).await;
             assert_eq!(res.status(), StatusCode::OK, "{path}");
@@ -418,6 +420,50 @@ mod tests {
             ("login.js", include_str!("../../static/login.js")),
         ] {
             assert!(!src.contains("innerHTML"), "{name}: innerHTML");
+        }
+    }
+
+    #[test]
+    fn svg_assets_are_static_images() {
+        // SVG can carry scripts; ours must stay purely static drawings.
+        let favicon = include_str!("../../static/favicon.svg");
+        assert!(favicon.starts_with("<svg"));
+        for banned in [
+            "<script",
+            "onload",
+            "onclick",
+            "href=",
+            "<style",
+            "<foreignObject",
+        ] {
+            assert!(
+                !favicon.contains(banned),
+                "favicon.svg must not contain {banned}"
+            );
+        }
+        for (name, html) in [
+            ("index.html", include_str!("../../static/index.html")),
+            ("login.html", include_str!("../../static/login.html")),
+        ] {
+            assert!(
+                html.contains(r#"<link rel="icon" href="/favicon.svg""#),
+                "{name} must link the favicon"
+            );
+            assert!(
+                html.contains(r#"class="logo""#),
+                "{name} must show the logo"
+            );
+        }
+    }
+
+    #[test]
+    fn stylesheet_draws_with_lines_not_shadows() {
+        let css = include_str!("../../static/style.css");
+        for banned in ["box-shadow", "text-shadow", "drop-shadow"] {
+            assert!(
+                !css.contains(banned),
+                "{banned}: this theme draws cards with 1px lines, never shadows"
+            );
         }
     }
 

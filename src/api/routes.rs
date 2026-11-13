@@ -41,6 +41,7 @@ fn asset(content_type: &'static str, body: &'static str) -> Response {
 const HTML: &str = "text/html; charset=utf-8";
 const CSS: &str = "text/css; charset=utf-8";
 const JS: &str = "text/javascript; charset=utf-8";
+const SVG: &str = "image/svg+xml";
 
 pub async fn index() -> Response {
     asset(HTML, include_str!("../../static/index.html"))
@@ -60,4 +61,8 @@ pub async fn login_js() -> Response {
 
 pub async fn style_css() -> Response {
     asset(CSS, include_str!("../../static/style.css"))
+}
+
+pub async fn favicon() -> Response {
+    asset(SVG, include_str!("../../static/favicon.svg"))
 }

@@ -5,18 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>NodeWatch – Sign in</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <div class="login-wrap">
     <form class="login-card" id="login-form" autocomplete="on">
-      <div class="brand"><span class="logo" aria-hidden="true"></span><h1>NodeWatch</h1></div>
-      <p>Enter the access token to view this host.</p>
+      <div class="brand">
+        <svg class="logo" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect class="logo-frame" x="4" y="4" width="24" height="24" rx="5.5"/>
+        <path class="logo-pulse" d="M8.5 18.5H12.5L15 10.5L18 23L20 18.5H23.5"/>
+          </svg>
+        <h1>NodeWatch</h1>
+      </div>
+      <p class="lede">Enter the access token to view this server.</p>
       <label for="token">Access token</label>
       <input id="token" name="password" type="password" autocomplete="current-password" required autofocus spellcheck="false">
-      <button class="btn btn-primary" id="submit" type="submit">Sign in</button>
+      <button class="btn" id="submit" type="submit">Sign in</button>
       <p class="form-error" id="error" role="alert"></p>
-      <noscript><p class="form-error">JavaScript is required.</p></noscript>
+      <noscript><p class="form-error">JavaScript is required to sign in.</p></noscript>
     </form>
   </div>
   <script src="/login.js"></script>

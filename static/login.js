@@ -30,11 +30,11 @@
         location.assign("/");
         return;
       }
-      if (res.status === 401) return fail("Invalid access token.");
-      if (res.status === 413) return fail("That token is too long.");
-      fail("Sign-in failed (HTTP " + res.status + ").");
+      if (res.status === 401) return fail("That token isn't valid. Check it and try again.");
+      if (res.status === 413) return fail("That token is too long. Check that you pasted only the token.");
+      fail("Sign-in failed (HTTP " + res.status + "). Try again.");
     } catch (_) {
-      fail("Cannot reach the server.");
+      fail("Can't reach the server. Check that NodeWatch is running and try again.");
     }
   });
 })();

@@ -5,59 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>NodeWatch</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand"><span class="logo" aria-hidden="true"></span><h1>NodeWatch</h1></div>
-    <div class="host" id="host"></div>
-    <div class="actions">
-      <span class="pill" id="status" data-state="loading" role="status">Connecting…</span>
-      <button class="btn" id="logout" type="button">Log out</button>
-    </div>
-  </header>
+  <div class="page">
+    <div class="banner" id="banner" role="alert" hidden></div>
 
-  <div class="banner" id="banner" role="alert" hidden></div>
+    <main class="board is-loading" id="grid" aria-busy="true">
+      <header class="cell head">
+        <div class="head-id">
+          <h1 class="product">
+          <svg class="logo" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <rect class="logo-frame" x="4" y="4" width="24" height="24" rx="5.5"/>
+            <path class="logo-pulse" d="M8.5 18.5H12.5L15 10.5L18 23L20 18.5H23.5"/>
+          </svg>
+          NodeWatch
+        </h1>
+        </div>
+        <div class="head-end">
+          <span class="status" id="status" data-state="loading" role="status">
+            <span class="led" aria-hidden="true"></span><span id="status-text">Connecting</span>
+          </span>
+          <span id="updated"></span>
+          <button class="link" id="logout" type="button">Log out</button>
+        </div>
+      </header>
 
-  <main class="grid is-loading" id="grid" aria-busy="true">
-    <section class="card" aria-labelledby="h-cpu">
-      <div class="card-head"><h2 id="h-cpu">CPU</h2><span class="card-sub" id="cpu-sub">loading</span></div>
-      <div class="big num" id="cpu-pct">–</div>
-      <div class="bar" id="cpu-bar"><div class="bar-fill"></div></div>
-      <div class="cores" id="cpu-cores" aria-label="Per-core usage"></div>
-    </section>
+      <section class="cell" aria-labelledby="h-cpu">
+        <div class="cell-head"><h2 id="h-cpu">CPU</h2><span class="sub" id="cpu-sub">Loading</span></div>
+        <div class="readout"><span class="figure" id="cpu-pct">–</span><span class="figure-unit">%</span></div>
+        <div class="meter" id="cpu-bar"><i></i></div>
+      </section>
 
-    <section class="card" aria-labelledby="h-mem">
-      <div class="card-head"><h2 id="h-mem">Memory</h2><span class="card-sub" id="mem-sub">loading</span></div>
-      <div class="big num" id="mem-pct">–</div>
-      <div class="bar" id="mem-bar"><div class="bar-fill"></div></div>
-      <dl class="kv">
-        <dt>Used</dt><dd id="mem-used">–</dd>
-        <dt>Available</dt><dd id="mem-avail">–</dd>
-        <dt>Total</dt><dd id="mem-total">–</dd>
-        <dt>Swap</dt><dd id="mem-swap">–</dd>
-      </dl>
-    </section>
+      <section class="cell" aria-labelledby="h-mem">
+        <div class="cell-head"><h2 id="h-mem">Memory</h2><span class="sub" id="mem-sub">Loading</span></div>
+        <div class="readout"><span class="figure" id="mem-pct">–</span><span class="figure-unit">%</span></div>
+        <div class="meter" id="mem-bar"><i></i></div>
+        <dl class="rows">
+          <div class="row"><dt>Used</dt><dd id="mem-used">–</dd></div>
+          <div class="row"><dt>Available</dt><dd id="mem-avail">–</dd></div>
+          <div class="row"><dt>Total</dt><dd id="mem-total">–</dd></div>
+        </dl>
+        <dl class="swap">
+          <div class="row"><dt>Swap</dt><dd id="swap-text">–</dd></div>
+        </dl>
+        <div class="meter" id="swap-bar"><i></i></div>
+      </section>
 
-    <section class="card" aria-labelledby="h-sys">
-      <div class="card-head"><h2 id="h-sys">System</h2><span class="card-sub" id="sys-sub">loading</span></div>
-      <dl class="kv">
-        <dt>Hostname</dt><dd id="sys-host">–</dd>
-        <dt>OS</dt><dd id="sys-os">–</dd>
-        <dt>Kernel</dt><dd id="sys-kernel">–</dd>
-        <dt>Architecture</dt><dd id="sys-arch">–</dd>
-        <dt>Uptime</dt><dd id="sys-uptime">–</dd>
-      </dl>
-    </section>
+      <section class="cell" aria-labelledby="h-sys">
+        <div class="cell-head"><h2 id="h-sys">System</h2></div>
+        <dl class="rows">
+          <div class="row"><dt>OS</dt><dd id="sys-os">–</dd></div>
+          <div class="row"><dt>Kernel</dt><dd class="mono" id="sys-kernel">–</dd></div>
+          <div class="row"><dt>Architecture</dt><dd class="mono" id="sys-arch">–</dd></div>
+          <div class="row"><dt>Uptime</dt><dd id="sys-uptime">–</dd></div>
+        </dl>
+      </section>
 
-    <section class="card card-wide" aria-labelledby="h-disks">
-      <div class="card-head"><h2 id="h-disks">Storage</h2><span class="card-sub" id="disks-sub">loading</span></div>
-      <div class="disks" id="disks"></div>
-    </section>
-  </main>
+      <section class="cell wide" aria-labelledby="h-cores">
+        <div class="cell-head"><h2 id="h-cores">Cores</h2><p class="core-detail" id="core-detail" aria-live="polite"></p></div>
+        <div class="cores" id="cpu-cores" role="group" aria-label="Load per logical CPU"></div>
+      </section>
 
-  <footer class="foot" id="updated"></footer>
-  <noscript><p class="banner">JavaScript is required to display live metrics.</p></noscript>
+      <section class="cell wide" aria-labelledby="h-disks">
+        <div class="cell-head"><h2 id="h-disks">Storage</h2><span class="sub" id="disks-sub">Loading</span></div>
+        <div id="disks"></div>
+      </section>
+    </main>
+  </div>
+
+  <noscript><p class="banner">JavaScript is required to show live metrics.</p></noscript>
   <script src="/app.js"></script>
 </body>
 </html>
