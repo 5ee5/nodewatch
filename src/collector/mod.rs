@@ -22,6 +22,8 @@ use tracing::{error, info};
 pub struct Snapshot {
     /// Unix time in milliseconds when this sample finished.
     pub collected_at_ms: u64,
+    /// How often the sampler refreshes; lets clients judge staleness.
+    pub interval_secs: u64,
     pub system: system::SystemInfo,
     pub cpu: cpu::CpuStats,
     pub memory: memory::MemoryStats,
@@ -59,17 +61,22 @@ pub fn round1(v: f32) -> f32 {
 pub struct Collector {
     sys: System,
     disks: Disks,
+    interval: Duration,
 }
 
 impl Collector {
-    pub fn new() -> Result<Self, sysinfo::Error> {
+    pub fn new(interval: Duration) -> Result<Self, sysinfo::Error> {
         let sys = System::new_with_specifics(
             RefreshKind::nothing()
                 .with_cpu(CpuRefreshKind::everything())
                 .with_memory(MemoryRefreshKind::everything()),
         )?;
         let disks = Disks::new_with_refreshed_list()?;
-        Ok(Self { sys, disks })
+        Ok(Self {
+            sys,
+            disks,
+            interval,
+        })
     }
 
     /// Reads fresh values. Blocking: touches /proc, /sys and statvfs on every mount.
@@ -79,6 +86,7 @@ impl Collector {
         self.disks.refresh(true);
         Snapshot {
             collected_at_ms: now_ms(),
+            interval_secs: self.interval.as_secs(),
             system: system::collect(),
             cpu: cpu::collect(&self.sys),
             memory: memory::collect(&self.sys),
@@ -98,7 +106,7 @@ fn now_ms() -> u64 {
 /// server never serves an all-zero CPU reading.
 pub async fn spawn(interval: Duration) -> Result<SharedSnapshot, sysinfo::Error> {
     let shared = SharedSnapshot::default();
-    let mut collector = Collector::new()?;
+    let mut collector = Collector::new(interval)?;
 
     // Warm-up: CPU usage is the delta between two reads.
     collector.sys.refresh_cpu_all();
@@ -125,7 +133,7 @@ pub async fn spawn(interval: Duration) -> Result<SharedSnapshot, sysinfo::Error>
                 Err(e) => {
                     // The collector was lost with the panicked task; rebuild it.
                     error!("sampling task failed: {e}");
-                    match Collector::new() {
+                    match Collector::new(interval) {
                         Ok(c) => collector = c,
                         Err(e) => {
                             error!("cannot rebuild collector, sampler stopped: {e}");
@@ -159,7 +167,9 @@ mod tests {
 
     #[test]
     fn real_host_sample_is_sane() {
-        let snap = Collector::new().expect("collector").sample();
+        let snap = Collector::new(Duration::from_secs(2))
+            .expect("collector")
+            .sample();
         assert!(snap.memory.total_bytes > 0);
         assert!(snap.cpu.core_count > 0);
         assert_eq!(snap.cpu.core_count, snap.cpu.cores.len());

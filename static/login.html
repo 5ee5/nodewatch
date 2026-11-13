@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>NodeWatch – Sign in</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="login-wrap">
+    <form class="login-card" id="login-form" autocomplete="on">
+      <div class="brand"><span class="logo" aria-hidden="true"></span><h1>NodeWatch</h1></div>
+      <p>Enter the access token to view this host.</p>
+      <label for="token">Access token</label>
+      <input id="token" name="password" type="password" autocomplete="current-password" required autofocus spellcheck="false">
+      <button class="btn btn-primary" id="submit" type="submit">Sign in</button>
+      <p class="form-error" id="error" role="alert"></p>
+      <noscript><p class="form-error">JavaScript is required.</p></noscript>
+    </form>
+  </div>
+  <script src="/login.js"></script>
+</body>
+</html>

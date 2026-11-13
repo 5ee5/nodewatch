@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>NodeWatch</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo" aria-hidden="true"></span><h1>NodeWatch</h1></div>
+    <div class="host" id="host"></div>
+    <div class="actions">
+      <span class="pill" id="status" data-state="loading" role="status">Connecting…</span>
+      <button class="btn" id="logout" type="button">Log out</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="alert" hidden></div>
+
+  <main class="grid is-loading" id="grid" aria-busy="true">
+    <section class="card" aria-labelledby="h-cpu">
+      <div class="card-head"><h2 id="h-cpu">CPU</h2><span class="card-sub" id="cpu-sub">loading</span></div>
+      <div class="big num" id="cpu-pct">–</div>
+      <div class="bar" id="cpu-bar"><div class="bar-fill"></div></div>
+      <div class="cores" id="cpu-cores" aria-label="Per-core usage"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-mem">
+      <div class="card-head"><h2 id="h-mem">Memory</h2><span class="card-sub" id="mem-sub">loading</span></div>
+      <div class="big num" id="mem-pct">–</div>
+      <div class="bar" id="mem-bar"><div class="bar-fill"></div></div>
+      <dl class="kv">
+        <dt>Used</dt><dd id="mem-used">–</dd>
+        <dt>Available</dt><dd id="mem-avail">–</dd>
+        <dt>Total</dt><dd id="mem-total">–</dd>
+        <dt>Swap</dt><dd id="mem-swap">–</dd>
+      </dl>
+    </section>
+
+    <section class="card" aria-labelledby="h-sys">
+      <div class="card-head"><h2 id="h-sys">System</h2><span class="card-sub" id="sys-sub">loading</span></div>
+      <dl class="kv">
+        <dt>Hostname</dt><dd id="sys-host">–</dd>
+        <dt>OS</dt><dd id="sys-os">–</dd>
+        <dt>Kernel</dt><dd id="sys-kernel">–</dd>
+        <dt>Architecture</dt><dd id="sys-arch">–</dd>
+        <dt>Uptime</dt><dd id="sys-uptime">–</dd>
+      </dl>
+    </section>
+
+    <section class="card card-wide" aria-labelledby="h-disks">
+      <div class="card-head"><h2 id="h-disks">Storage</h2><span class="card-sub" id="disks-sub">loading</span></div>
+      <div class="disks" id="disks"></div>
+    </section>
+  </main>
+
+  <footer class="foot" id="updated"></footer>
+  <noscript><p class="banner">JavaScript is required to display live metrics.</p></noscript>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -30,6 +30,8 @@ pub fn build_router(state: AppState) -> Router {
     // Unmatched paths are 404 for everyone: auth is a `route_layer`, so it only
     // runs for routes that exist.
     let protected = Router::new()
+        .route("/", get(routes::index))
+        .route("/app.js", get(routes::app_js))
         .route("/api/stats", get(routes::stats))
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
@@ -37,6 +39,9 @@ pub fn build_router(state: AppState) -> Router {
         ));
 
     let public = Router::new()
+        .route("/login", get(routes::login_page))
+        .route("/login.js", get(routes::login_js))
+        .route("/style.css", get(routes::style_css))
         .route("/api/health", get(routes::health))
         .route("/api/login", post(auth::login))
         .route("/api/logout", post(auth::logout));
@@ -99,7 +104,7 @@ mod tests {
     fn app_with(cfg: &Config, with_snapshot: bool) -> Router {
         let snapshot = SharedSnapshot::default();
         if with_snapshot {
-            snapshot.set(Collector::new().unwrap().sample());
+            snapshot.set(Collector::new(Duration::from_secs(2)).unwrap().sample());
         }
         build_router(AppState {
             snapshot,
@@ -198,7 +203,14 @@ mod tests {
         .await;
         assert_eq!(res.status(), StatusCode::OK);
         let body = json_of(res).await;
-        for key in ["collected_at_ms", "system", "cpu", "memory", "disks"] {
+        for key in [
+            "collected_at_ms",
+            "interval_secs",
+            "system",
+            "cpu",
+            "memory",
+            "disks",
+        ] {
             assert!(body.get(key).is_some(), "missing {key}");
         }
         assert!(body["memory"]["total_bytes"].as_u64().unwrap() > 0);
@@ -338,6 +350,75 @@ mod tests {
             stats_with_cookie(&app, &cookie).await,
             StatusCode::UNAUTHORIZED
         );
+    }
+
+    #[tokio::test]
+    async fn pages_redirect_to_login_without_a_session() {
+        for path in ["/", "/app.js"] {
+            let res = send(&app(), get_req(path).body(Body::empty()).unwrap()).await;
+            assert_eq!(res.status(), StatusCode::SEE_OTHER, "{path}");
+            assert_eq!(res.headers()[header::LOCATION], "/login");
+        }
+    }
+
+    #[tokio::test]
+    async fn login_assets_are_public_with_correct_types() {
+        for (path, ctype) in [
+            ("/login", "text/html"),
+            ("/login.js", "text/javascript"),
+            ("/style.css", "text/css"),
+        ] {
+            let res = send(&app(), get_req(path).body(Body::empty()).unwrap()).await;
+            assert_eq!(res.status(), StatusCode::OK, "{path}");
+            assert!(
+                res.headers()[header::CONTENT_TYPE]
+                    .to_str()
+                    .unwrap()
+                    .starts_with(ctype),
+                "{path}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn dashboard_is_served_after_login() {
+        let app = app();
+        let cookie = cookie_pair(&login(&app, TOKEN).await);
+        for (path, needle) in [("/", "NodeWatch"), ("/app.js", "/api/stats")] {
+            let res = send(
+                &app,
+                get_req(path)
+                    .header(header::COOKIE, &cookie)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await;
+            assert_eq!(res.status(), StatusCode::OK, "{path}");
+            assert!(text(res).await.contains(needle), "{path}");
+        }
+    }
+
+    #[test]
+    fn frontend_is_csp_safe() {
+        // CSP is `default-src 'self'`: no inline scripts, handlers or style attributes.
+        for (name, src) in [
+            ("index.html", include_str!("../../static/index.html")),
+            ("login.html", include_str!("../../static/login.html")),
+        ] {
+            assert!(!src.contains("style=\""), "{name}: inline style");
+            assert!(!src.contains(" onclick="), "{name}: inline handler");
+            assert!(!src.contains("<script>"), "{name}: inline script");
+            assert!(
+                !src.contains("http://") && !src.contains("https://"),
+                "{name}: external ref"
+            );
+        }
+        for (name, src) in [
+            ("app.js", include_str!("../../static/app.js")),
+            ("login.js", include_str!("../../static/login.js")),
+        ] {
+            assert!(!src.contains("innerHTML"), "{name}: innerHTML");
+        }
     }
 
     #[tokio::test]
