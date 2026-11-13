@@ -1,0 +1,8 @@
+# TLS-terminating reverse proxy in front of NodeWatch (Caddy 2).
+# `tls internal` issues a certificate from Caddy's own local CA: import that
+# CA's root certificate on your LAN clients once (see README), or replace it
+# with a real certificate / ACME DNS challenge if you own a domain.
+nodewatch.lan {
+	tls internal
+	reverse_proxy 127.0.0.1:8080
+}

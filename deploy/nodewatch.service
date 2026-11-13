@@ -1,0 +1,58 @@
+# /etc/systemd/system/nodewatch.service
+#
+# Install:
+#   install -m 0755 target/release/nodewatch /usr/local/bin/nodewatch
+#   install -d -m 0700 /etc/nodewatch
+#   openssl rand -hex 32 | install -m 0600 /dev/stdin /etc/nodewatch/token
+#   systemctl daemon-reload && systemctl enable --now nodewatch
+
+[Unit]
+Description=NodeWatch system monitoring dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/nodewatch
+Restart=on-failure
+RestartSec=3
+
+# --- configuration -------------------------------------------------------
+# The token is handed over as a credential: root-owned on disk, readable only
+# by this service at runtime, and never present in the environment or `ps`.
+LoadCredential=token:/etc/nodewatch/token
+Environment=NODEWATCH_TOKEN_FILE=%d/token
+# Loopback only; expose it through a TLS reverse proxy (see README).
+Environment=NODEWATCH_BIND=127.0.0.1:8080
+# Uncomment when a TLS proxy terminates HTTPS in front of NodeWatch:
+#Environment=NODEWATCH_COOKIE_SECURE=true
+
+# --- sandboxing ----------------------------------------------------------
+# NodeWatch only reads /proc, /sys and filesystem statistics, and listens on a socket.
+DynamicUser=yes
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+ProtectSystem=strict
+# read-only (not "yes"): statvfs on a mount under /home must keep working so the
+# disk shows up on the dashboard.
+ProtectHome=read-only
+PrivateTmp=yes
+# /dev/urandom (session ids) remains available with PrivateDevices.
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources

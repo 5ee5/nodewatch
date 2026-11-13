@@ -1,0 +1,15 @@
+# Allow only the LAN subnet to reach the NodeWatch (or reverse-proxy) port.
+# Adjust the subnet and port. Load with:  nft -f nftables.example
+#
+# This table runs just before the normal filter chains. An `accept` here does
+# NOT override a `drop` in another table: if your host already has a default-drop
+# policy, also allow the port there.
+table inet nodewatch {
+	chain input {
+		type filter hook input priority filter - 1; policy accept;
+		iifname "lo" accept
+		tcp dport 443 ip saddr 192.168.1.0/24 accept
+		tcp dport 443 ip6 saddr fd00::/8 accept
+		tcp dport { 443, 8080 } drop
+	}
+}
